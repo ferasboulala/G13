@@ -4,7 +4,7 @@
 
 namespace g13 {
 
-template <typename Func, typename... Args, typename TimeDuration = std::chrono::microseconds>
+template <typename Func, typename... Args, class TimeDuration = std::chrono::nanoseconds>
 static auto measureTime(Func func, Args &&...args) {
     using FuncReturnType = decltype(func(std::forward<Args>(args)...));
 
