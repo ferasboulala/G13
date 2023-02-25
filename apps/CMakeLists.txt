@@ -25,4 +25,4 @@ function(create_binary target_name entry_point kernel_entry_point)
   target_link_libraries(${target_name} ${METAL} ${FOUNDATION} ${METAL_KIT})
 endfunction()
 
-create_binary(l1-cache l1-cache/l1Cache.cpp l1-cache/l1Cache.metal)
+create_binary(cache cache/cache.cpp cache/cache.metal)

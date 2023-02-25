@@ -2,7 +2,6 @@
 #define CA_PRIVATE_IMPLEMENTATION
 #define MTL_PRIVATE_IMPLEMENTATION
 
-#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
@@ -17,8 +16,10 @@
 #include "QuartzCore/QuartzCore.hpp"
 #include "measure.hh"
 
+// Generates a vector of indices that are unique and that form a single cycle of length size. This
+// algorithm is called Satollo's algorithm.
 template <typename T>
-std::vector<T> satolloRandomIndices(uint64_t size) {
+static std::vector<T> satolloRandomIndices(uint64_t size) {
     assert(size >= 2);
     std::random_device               randomDevice;
     std::mt19937                     generator(randomDevice());
@@ -35,7 +36,7 @@ std::vector<T> satolloRandomIndices(uint64_t size) {
 }
 
 int main(int argc, char **argv) {
-    printf("%s to determine M1 GPU L1 cache size\n", argv[0]);
+    printf("%s to determine M1 GPU L1 and L2 cache sizes\n", argv[0]);
     MTL::Device *device = MTL::CreateSystemDefaultDevice();
     assert(device);
 
@@ -46,7 +47,7 @@ int main(int argc, char **argv) {
         NS::String::string(libraryPath.c_str(), NS::ASCIIStringEncoding), &error);
     assert(computeShaderLibrary);
 
-    static const char *kernelName = "l1CacheIntrospection";
+    static const char *kernelName = "cacheIntrospection";
     const auto         kernelNameNS = NS::String::string(kernelName, NS::ASCIIStringEncoding);
     MTL::Function     *kernelHandle = computeShaderLibrary->newFunction(kernelNameNS);
     assert(kernelHandle);
@@ -57,8 +58,12 @@ int main(int argc, char **argv) {
     auto commandQueue = device->newCommandQueue();
     assert(commandQueue);
 
+    // The kernel will execute extremely fast on small inputs. To aleviate noisy measurements,
+    // we execute the reads many times using a loop. Final duration is divided by the number of
+    // iterations to accomodate for that.
     static constexpr uint64_t maxSize = 1 << 22;
-    static constexpr uint32_t nExpectedReads = maxSize * 8;  // 128 MB
+    static constexpr uint32_t nExpectedReads = maxSize * 4;
+
     for (uint64_t size = 1 << 8; size <= maxSize; size <<= 1) {
         const uint32_t nIterations = nExpectedReads / size;
 
@@ -86,12 +91,13 @@ int main(int argc, char **argv) {
             commandBuffer->commit();
             commandBuffer->waitUntilCompleted();
         };
-        const auto duration = g13::measureTime(commit);
 
+        const auto     duration = g13::measureTime(commit);
+        const uint64_t durationPerInnerLoopIteration = duration / nExpectedReads;
         printf("%12u %12lld ns %4lld ns/read\n",
                uint32_t(indicesBuffer->allocatedSize()),
                duration,
-               duration / nExpectedReads);
+               durationPerInnerLoopIteration);
         fflush(stdout);
     }
 
