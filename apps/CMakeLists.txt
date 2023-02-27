@@ -26,3 +26,4 @@ function(create_binary target_name entry_point kernel_entry_point)
 endfunction()
 
 create_binary(cache cache/cache.cpp cache/cache.metal)
+create_binary(cacheline cache/cacheline.cpp cache/cacheline.metal)
