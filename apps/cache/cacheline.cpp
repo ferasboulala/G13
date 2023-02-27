@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
     assert(commandQueue);
 
     static constexpr uint64_t maxStride = 512;
-    static constexpr uint64_t bufferSize = 1 << 22;
+    static constexpr uint64_t bufferSize = 1 << 24;
 
     auto indicesBuffer =
         device->newBuffer(bufferSize * sizeof(uint32_t), MTL::ResourceStorageModeShared);
@@ -86,7 +86,10 @@ int main(int argc, char **argv) {
         };
 
         const auto duration = g13::measureTime(commit);
-        printf("%12llu %12lld ns\n", stride * sizeof(uint32_t), duration);
+        printf("%12llu %12lld ns %12llu ns/element\n",
+               stride * sizeof(uint32_t),
+               duration,
+               duration / bufferSize);
         fflush(stdout);
     }
 
