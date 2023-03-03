@@ -2,8 +2,8 @@ function(build_metal_compute_shader output_file entry_point)
   set(BUILD_KERNEL_CMD   "xcrun -sdk macosx metal -c ${CMAKE_CURRENT_SOURCE_DIR}/${entry_point} -o ${CMAKE_BINARY_DIR}/kernel")
   set(BUNDLE_LIBRARY_CMD "xcrun -sdk macosx metallib ${CMAKE_BINARY_DIR}/kernel                 -o ${output_file}")
   add_custom_command(
-    COMMAND xcrun -sdk macosx metal -c ${CMAKE_CURRENT_SOURCE_DIR}/${entry_point} -o ${CMAKE_BINARY_DIR}/kernel
-    COMMAND xcrun -sdk macosx metallib ${CMAKE_BINARY_DIR}/kernel                 -o ${output_file}
+    COMMAND xcrun -sdk macosx metal -c ${CMAKE_CURRENT_SOURCE_DIR}/${entry_point} -o ${CMAKE_BINARY_DIR}/${entry_point}_kernel
+    COMMAND xcrun -sdk macosx metallib ${CMAKE_BINARY_DIR}/${entry_point}_kernel  -o ${output_file}
     OUTPUT "${output_file}"
     DEPENDS ${entry_point}
     VERBATIM)
