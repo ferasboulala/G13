@@ -10,7 +10,7 @@ uint32_t pointerChase(const device uint32_t *indices) {
     return indices[ptr];
 }
 
-kernel void cacheLineIntrospection(device uint32_t *indices)
+kernel void cacheLine(device uint32_t *indices)
 {
     const uint32_t result = pointerChase(indices);
     indices[result] = result;

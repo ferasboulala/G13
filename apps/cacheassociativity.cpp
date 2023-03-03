@@ -23,18 +23,28 @@ void prepareStridedIndices(T *buffer, uint64_t size, uint64_t stride) {
     assert(size % stride == 0);
     assert(std::numeric_limits<T>::max() >= size);
 
-    const uint64_t sizePerStep = size / stride;
-    for (uint64_t step = 0; step < stride; ++step) {
-        for (uint64_t i = 0; i < sizePerStep - 1; ++i) {
-            buffer[i * stride + step] = (i + 1) * stride + step;
-        }
-        buffer[(sizePerStep - 1) * stride + step] = step + 1;
+    const uint64_t nIterations = size / stride;
+    for (uint64_t i = 0; i < nIterations - 1; ++i) {
+        buffer[i * stride] = (i + 1) * stride;
     }
-    buffer[(sizePerStep - 1) * stride + stride - 1] = 0;
+    buffer[(nIterations - 1) * stride] = 0;
+}
+
+template <typename T>
+inline bool isAPowerOfTwo(T x) {
+    return (x & (x - 1)) == 0;
 }
 
 int main(int argc, char **argv) {
-    printf("%s to determine M1 GPU L1 and L2 cache sizes\n", argv[0]);
+    if (argc != 2) {
+        printf("usage: %s L1CacheSizeInBytes\n", argv[0]);
+        return -1;
+    }
+
+    const uint64_t L1CacheSizeInBytes = std::atoll(argv[1]);
+    assert(L1CacheSizeInBytes);
+    assert(isAPowerOfTwo(L1CacheSizeInBytes));
+
     MTL::Device *device = MTL::CreateSystemDefaultDevice();
     assert(device);
 
@@ -45,7 +55,7 @@ int main(int argc, char **argv) {
         NS::String::string(libraryPath.c_str(), NS::ASCIIStringEncoding), &error);
     assert(computeShaderLibrary);
 
-    static const char *kernelName = "cacheLineIntrospection";
+    static const char *kernelName = "cacheAssociativity";
     const auto         kernelNameNS = NS::String::string(kernelName, NS::ASCIIStringEncoding);
     MTL::Function     *kernelHandle = computeShaderLibrary->newFunction(kernelNameNS);
     assert(kernelHandle);
@@ -56,13 +66,17 @@ int main(int argc, char **argv) {
     auto commandQueue = device->newCommandQueue();
     assert(commandQueue);
 
-    static constexpr uint64_t maxStride = 512;
-    static constexpr uint64_t bufferSize = 1 << 24;
+    static constexpr uint64_t maxAssociativity = 256;
+    static constexpr uint32_t nExpectedReads = 1 << 24;
+    static const uint64_t     bufferSize = 2 * L1CacheSizeInBytes / sizeof(uint32_t);
+    assert(L1CacheSizeInBytes / maxAssociativity > sizeof(uint32_t));
 
-    auto indicesBuffer =
-        device->newBuffer(bufferSize * sizeof(uint32_t), MTL::ResourceStorageModeShared);
+    auto indicesBuffer = device->newBuffer(L1CacheSizeInBytes, MTL::ResourceStorageModeShared);
 
-    for (uint64_t stride = 1; stride <= maxStride; stride <<= 1) {
+    for (uint64_t associativity = 1; associativity <= maxAssociativity; associativity <<= 1) {
+        const uint64_t strideInBytes = L1CacheSizeInBytes / associativity;
+        const uint64_t stride = strideInBytes / sizeof(uint32_t);
+
         prepareStridedIndices(
             reinterpret_cast<uint32_t *>(indicesBuffer->contents()), bufferSize, stride);
 
@@ -74,6 +88,7 @@ int main(int argc, char **argv) {
 
         computeEncoder->setComputePipelineState(computePipelineState);
         computeEncoder->setBuffer(indicesBuffer, 0, 0);
+        computeEncoder->setBytes(&nExpectedReads, sizeof(nExpectedReads), 1);
 
         const MTL::Size threadgroupSize = MTL::Size::Make(1, 1, 1);
         const MTL::Size gridSize = MTL::Size::Make(1, 1, 1);
@@ -86,10 +101,7 @@ int main(int argc, char **argv) {
         };
 
         const auto duration = g13::measureTime(commit);
-        printf("%12llu %12lld ns %12llu ns/element\n",
-               stride * sizeof(uint32_t),
-               duration,
-               duration / bufferSize);
+        printf("%12llu %12lld ns\n", associativity, duration);
         fflush(stdout);
     }
 

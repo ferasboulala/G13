@@ -25,5 +25,6 @@ function(create_binary target_name entry_point kernel_entry_point)
   target_link_libraries(${target_name} ${METAL} ${FOUNDATION} ${METAL_KIT})
 endfunction()
 
-create_binary(cache cache/cache.cpp cache/cache.metal)
-create_binary(cacheline cache/cacheline.cpp cache/cacheline.metal)
+create_binary(cachesize cachesize.cpp cachesize.metal)
+create_binary(cacheline cacheline.cpp cacheline.metal)
+create_binary(cacheassociativity cacheassociativity.cpp cacheassociativity.metal)

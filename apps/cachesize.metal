@@ -10,7 +10,7 @@ inline uint32_t pointerChase(const device uint32_t *indices) {
     return indices[ptr];
 }
 
-kernel void cacheIntrospection(
+kernel void cacheSize(
     device uint32_t *indices,
     device const uint32_t &nIterations)
 {

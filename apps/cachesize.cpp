@@ -36,7 +36,6 @@ static std::vector<T> satolloRandomIndices(uint64_t size) {
 }
 
 int main(int argc, char **argv) {
-    printf("%s to determine M1 GPU L1 and L2 cache sizes\n", argv[0]);
     MTL::Device *device = MTL::CreateSystemDefaultDevice();
     assert(device);
 
@@ -47,7 +46,7 @@ int main(int argc, char **argv) {
         NS::String::string(libraryPath.c_str(), NS::ASCIIStringEncoding), &error);
     assert(computeShaderLibrary);
 
-    static const char *kernelName = "cacheIntrospection";
+    static const char *kernelName = "cacheSize";
     const auto         kernelNameNS = NS::String::string(kernelName, NS::ASCIIStringEncoding);
     MTL::Function     *kernelHandle = computeShaderLibrary->newFunction(kernelNameNS);
     assert(kernelHandle);
