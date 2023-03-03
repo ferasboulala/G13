@@ -40,7 +40,6 @@ int main(int argc, char **argv) {
     assert(device);
 
     const std::string libraryPath = std::string(argv[0]) + "_library";
-    printf("Compute shader library in %s\n", libraryPath.c_str());
     NS::Error    *error = nullptr;
     MTL::Library *computeShaderLibrary = device->newLibrary(
         NS::String::string(libraryPath.c_str(), NS::ASCIIStringEncoding), &error);
