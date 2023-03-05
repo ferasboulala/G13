@@ -2,7 +2,7 @@
 
 using namespace metal;
 
-kernel void localMemory(device uint32_t       *indices,
+kernel void sharedMemory(device uint32_t       *indices,
                         device const uint32_t &expectedNReads) {
     constexpr uint32_t LOCAL_MEMORY_SIZE = 1 << 15;
     constexpr uint32_t LOCAL_MEMORY_N_ELEMENTS = LOCAL_MEMORY_SIZE / sizeof(uint32_t);

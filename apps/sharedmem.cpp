@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
         NS::String::string(libraryPath.c_str(), NS::ASCIIStringEncoding), &error);
     assert(computeShaderLibrary);
 
-    static const char *kernelName = "localMemory";
+    static const char *kernelName = "sharedMemory";
     const auto         kernelNameNS = NS::String::string(kernelName, NS::ASCIIStringEncoding);
     MTL::Function     *kernelHandle = computeShaderLibrary->newFunction(kernelNameNS);
     assert(kernelHandle);
@@ -43,12 +43,12 @@ int main(int argc, char **argv) {
     MTL::ComputeCommandEncoder *computeEncoder = commandBuffer->computeCommandEncoder();
     assert(computeEncoder);
 
-    static constexpr uint32_t LOCAL_MEMORY_SIZE = 1 << 15;
-    static constexpr uint32_t LOCAL_MEMORY_N_ELEMENTS = LOCAL_MEMORY_SIZE / sizeof(uint32_t);
+    static constexpr uint32_t SHARED_MEMORY_SIZE = 1 << 15;
+    static constexpr uint32_t SHARED_MEMORY_N_ELEMENTS = SHARED_MEMORY_SIZE / sizeof(uint32_t);
     static constexpr uint32_t EXPECTED_N_READS = 1 << 24;
 
-    auto indicesBuffer = device->newBuffer(LOCAL_MEMORY_SIZE, MTL::ResourceStorageModeShared);
-    auto indices = g13::satolloRandomIndices<uint32_t>(LOCAL_MEMORY_N_ELEMENTS);
+    auto indicesBuffer = device->newBuffer(SHARED_MEMORY_SIZE, MTL::ResourceStorageModeShared);
+    auto indices = g13::satolloRandomIndices<uint32_t>(SHARED_MEMORY_N_ELEMENTS);
     std::memcpy(indicesBuffer->contents(), indices.data(), indicesBuffer->allocatedSize());
 
     computeEncoder->setComputePipelineState(computePipelineState);

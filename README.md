@@ -1,18 +1,18 @@
 # G13
 M1 GPU architecture instrospection. Determining cache sizes and memory latencies across the hierarchy.
 
-# Local Memory Size
-Local memory or threadgroup memory sizes can be found here: https://developer.apple.com/metal/Metal-Feature-Set-Tables.pdf
+# Shared Memory Size
+Shared memory or threadgroup memory sizes can be found here: https://developer.apple.com/metal/Metal-Feature-Set-Tables.pdf
 
 # Latencies
 For M1 Max:
 
-| | L1 | L2 | Local Memory | Global memory |
+| | L1 | L2 | Shared Memory | Global memory |
 | :--- | :----: | :----: | :----: | ---: |
 | Size | 8 KB | 512 KB | 32 KB | - |
 | Line | 32 B | 32 B | - | - |
 | Associativity | 128 | - | - | - |
-| Latency | ~60 ns | ~115 ns | 65 ns | < 400 ns |
+| Latency | ~60 ns | ~115 ns | 65 ns | < 500 ns |
 
 These numbers were obtained by pointer chasing in a single thread, in a single core.
 
