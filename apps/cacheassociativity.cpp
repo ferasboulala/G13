@@ -7,8 +7,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <limits>
-#include <numeric>
-#include <random>
 #include <string>
 #include <vector>
 
@@ -49,9 +47,8 @@ int main(int argc, char **argv) {
     assert(device);
 
     const std::string libraryPath = std::string(argv[0]) + "_library";
-    printf("Compute shader library in %s\n", libraryPath.c_str());
-    NS::Error    *error = nullptr;
-    MTL::Library *computeShaderLibrary = device->newLibrary(
+    NS::Error        *error = nullptr;
+    MTL::Library     *computeShaderLibrary = device->newLibrary(
         NS::String::string(libraryPath.c_str(), NS::ASCIIStringEncoding), &error);
     assert(computeShaderLibrary);
 
@@ -66,14 +63,14 @@ int main(int argc, char **argv) {
     auto commandQueue = device->newCommandQueue();
     assert(commandQueue);
 
-    static constexpr uint64_t maxAssociativity = 256;
-    static constexpr uint32_t nExpectedReads = 1 << 24;
+    static constexpr uint64_t MAX_ASSOCIATIVITY = 256;
+    static constexpr uint32_t N_EXPECTED_READS = 1 << 24;
     static const uint64_t     bufferSize = 2 * L1CacheSizeInBytes / sizeof(uint32_t);
-    assert(L1CacheSizeInBytes / maxAssociativity > sizeof(uint32_t));
+    assert(L1CacheSizeInBytes / MAX_ASSOCIATIVITY > sizeof(uint32_t));
 
     auto indicesBuffer = device->newBuffer(L1CacheSizeInBytes, MTL::ResourceStorageModeShared);
 
-    for (uint64_t associativity = 1; associativity <= maxAssociativity; associativity <<= 1) {
+    for (uint64_t associativity = 1; associativity <= MAX_ASSOCIATIVITY; associativity <<= 1) {
         const uint64_t strideInBytes = L1CacheSizeInBytes / associativity;
         const uint64_t stride = strideInBytes / sizeof(uint32_t);
 
@@ -88,7 +85,7 @@ int main(int argc, char **argv) {
 
         computeEncoder->setComputePipelineState(computePipelineState);
         computeEncoder->setBuffer(indicesBuffer, 0, 0);
-        computeEncoder->setBytes(&nExpectedReads, sizeof(nExpectedReads), 1);
+        computeEncoder->setBytes(&N_EXPECTED_READS, sizeof(N_EXPECTED_READS), 1);
 
         const MTL::Size threadgroupSize = MTL::Size::Make(1, 1, 1);
         const MTL::Size gridSize = MTL::Size::Make(1, 1, 1);

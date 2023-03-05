@@ -6,42 +6,22 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <numeric>
-#include <random>
 #include <string>
 #include <vector>
 
 #include "Foundation/Foundation.hpp"
 #include "Metal/Metal.hpp"
 #include "QuartzCore/QuartzCore.hpp"
+#include "indices.hh"
 #include "measure.hh"
-
-// Generates a vector of indices that are unique and that form a single cycle of length size. This
-// algorithm is called Satollo's algorithm.
-template <typename T>
-static std::vector<T> satolloRandomIndices(uint64_t size) {
-    assert(size >= 2);
-    std::random_device               randomDevice;
-    std::mt19937                     generator(randomDevice());
-    std::uniform_int_distribution<T> distribution;
-    std::vector<T>                   indices(size);
-
-    std::iota(indices.begin(), indices.end(), 0);
-    for (uint64_t i = size - 1; i > 1; --i) {
-        std::swap(indices[i], indices[distribution(generator) % i]);
-    }
-    std::swap(indices[0], indices[1]);
-
-    return indices;
-}
 
 int main(int argc, char **argv) {
     MTL::Device *device = MTL::CreateSystemDefaultDevice();
     assert(device);
 
     const std::string libraryPath = std::string(argv[0]) + "_library";
-    NS::Error    *error = nullptr;
-    MTL::Library *computeShaderLibrary = device->newLibrary(
+    NS::Error        *error = nullptr;
+    MTL::Library     *computeShaderLibrary = device->newLibrary(
         NS::String::string(libraryPath.c_str(), NS::ASCIIStringEncoding), &error);
     assert(computeShaderLibrary);
 
@@ -59,15 +39,15 @@ int main(int argc, char **argv) {
     // The kernel will execute extremely fast on small inputs. To aleviate noisy measurements,
     // we execute the reads many times using a loop. Final duration is divided by the number of
     // iterations to accomodate for that.
-    static constexpr uint64_t maxSize = 1 << 22;
-    static constexpr uint32_t nExpectedReads = maxSize * 4;
+    static constexpr uint64_t MAX_SIZE = 1 << 24;
+    static constexpr uint32_t N_EXPECTED_READS = 1 << 24;
 
-    for (uint64_t size = 1 << 8; size <= maxSize; size <<= 1) {
-        const uint32_t nIterations = nExpectedReads / size;
+    for (uint64_t size = 1 << 8; size <= MAX_SIZE; size <<= 1) {
+        const uint32_t nIterations = N_EXPECTED_READS / size;
 
         auto indicesBuffer =
             device->newBuffer(size * sizeof(uint32_t), MTL::ResourceStorageModeShared);
-        const auto indices = satolloRandomIndices<uint32_t>(size);
+        const auto indices = g13::satolloRandomIndices<uint32_t>(size);
         std::memcpy(indicesBuffer->contents(), indices.data(), indicesBuffer->allocatedSize());
 
         MTL::CommandBuffer *commandBuffer = commandQueue->commandBuffer();
@@ -81,7 +61,7 @@ int main(int argc, char **argv) {
         computeEncoder->setBytes(&nIterations, sizeof(nIterations), 1);
 
         const MTL::Size threadgroupSize = MTL::Size::Make(1, 1, 1);
-        const MTL::Size gridSize = MTL::Size::Make(1, 1, 1);
+        const MTL::Size gridSize = MTL::Size::Make(32, 1, 1);
         computeEncoder->dispatchThreadgroups(gridSize, threadgroupSize);
         computeEncoder->endEncoding();
 
@@ -91,7 +71,7 @@ int main(int argc, char **argv) {
         };
 
         const auto     duration = g13::measureTime(commit);
-        const uint64_t durationPerInnerLoopIteration = duration / nExpectedReads;
+        const uint64_t durationPerInnerLoopIteration = duration / N_EXPECTED_READS;
         printf("%12u %12lld ns %4lld ns/read\n",
                uint32_t(indicesBuffer->allocatedSize()),
                duration,

@@ -7,8 +7,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <limits>
-#include <numeric>
-#include <random>
 #include <string>
 #include <vector>
 
@@ -54,15 +52,15 @@ int main(int argc, char **argv) {
     auto commandQueue = device->newCommandQueue();
     assert(commandQueue);
 
-    static constexpr uint64_t maxStride = 512;
-    static constexpr uint64_t bufferSize = 1 << 24;
+    static constexpr uint64_t MAX_STRIDE = 512;
+    static constexpr uint64_t BUFFER_SIZE = 1 << 24;
 
     auto indicesBuffer =
-        device->newBuffer(bufferSize * sizeof(uint32_t), MTL::ResourceStorageModeShared);
+        device->newBuffer(BUFFER_SIZE * sizeof(uint32_t), MTL::ResourceStorageModeShared);
 
-    for (uint64_t stride = 1; stride <= maxStride; stride <<= 1) {
+    for (uint64_t stride = 1; stride <= MAX_STRIDE; stride <<= 1) {
         prepareStridedIndices(
-            reinterpret_cast<uint32_t *>(indicesBuffer->contents()), bufferSize, stride);
+            reinterpret_cast<uint32_t *>(indicesBuffer->contents()), BUFFER_SIZE, stride);
 
         MTL::CommandBuffer *commandBuffer = commandQueue->commandBuffer();
         assert(commandBuffer);
@@ -87,7 +85,7 @@ int main(int argc, char **argv) {
         printf("%12llu %12lld ns %12llu ns/element\n",
                stride * sizeof(uint32_t),
                duration,
-               duration / bufferSize);
+               duration / BUFFER_SIZE);
         fflush(stdout);
     }
 
