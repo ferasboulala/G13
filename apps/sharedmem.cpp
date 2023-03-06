@@ -43,12 +43,12 @@ int main(int argc, char **argv) {
     MTL::ComputeCommandEncoder *computeEncoder = commandBuffer->computeCommandEncoder();
     assert(computeEncoder);
 
-    static constexpr uint32_t SHARED_MEMORY_SIZE = 1 << 15;
-    static constexpr uint32_t SHARED_MEMORY_N_ELEMENTS = SHARED_MEMORY_SIZE / sizeof(uint32_t);
-    static constexpr uint32_t EXPECTED_N_READS = 1 << 24;
+    static constexpr uint64_t SHARED_MEMORY_SIZE = 1 << 15;
+    static constexpr uint64_t SHARED_MEMORY_N_ELEMENTS = SHARED_MEMORY_SIZE / sizeof(uint64_t);
+    static constexpr uint64_t EXPECTED_N_READS = 1 << 25;
 
     auto indicesBuffer = device->newBuffer(SHARED_MEMORY_SIZE, MTL::ResourceStorageModeShared);
-    auto indices = g13::satolloRandomIndices<uint32_t>(SHARED_MEMORY_N_ELEMENTS);
+    auto indices = g13::satolloRandomIndices<uint64_t>(SHARED_MEMORY_N_ELEMENTS);
     std::memcpy(indicesBuffer->contents(), indices.data(), indicesBuffer->allocatedSize());
 
     computeEncoder->setComputePipelineState(computePipelineState);
@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
     };
     const auto duration = g13::measureTime(commit);
 
-    printf("%lld ns -> %lld ns/item", duration, duration / EXPECTED_N_READS);
+    printf("%lld ns -> %lld ns/u64\n", duration, duration / EXPECTED_N_READS);
 
     return 0;
 }

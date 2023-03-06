@@ -1,23 +1,22 @@
 #include <metal_stdlib>
 using namespace metal;
 
-inline uint32_t pointerChase(const device uint32_t *indices) {
-    uint32_t ptr = indices[0];
-    while (ptr) {
-        ptr = indices[ptr];
-    }
-
-    return indices[ptr];
-}
-
 kernel void cacheSize(
-    device uint32_t *indices,
-    device const uint32_t &nIterations)
+    device uint64_t *indices,
+    device const uint64_t &nIterations)
 {
-    uint32_t dummy = 0;
-    for (uint32_t iter = 0; iter < nIterations; ++iter) {
-        dummy += pointerChase(indices);
+    uint64_t index = 0;
+    do {
+        const uint64_t nextIndex = indices[index];
+        indices[index] = (uint64_t)(indices + nextIndex);
+        index = nextIndex;
+    } while (index);
+
+    uint64_t iter = nIterations;
+    device uint64_t *address = indices;
+    while (--iter) {
+        address = (device uint64_t*)(*address);
     }
 
-    indices[0] = dummy;
+    indices[0] = *address;
 }

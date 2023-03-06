@@ -2,22 +2,29 @@
 
 using namespace metal;
 
-kernel void sharedMemory(device uint32_t       *indices,
-                        device const uint32_t &expectedNReads) {
-    constexpr uint32_t LOCAL_MEMORY_SIZE = 1 << 15;
-    constexpr uint32_t LOCAL_MEMORY_N_ELEMENTS = LOCAL_MEMORY_SIZE / sizeof(uint32_t);
+kernel void sharedMemory(device uint64_t       *indices,
+                         device const uint64_t &nIterations) {
+    constexpr uint64_t LOCAL_MEMORY_SIZE = 1 << 15;
+    constexpr uint64_t LOCAL_MEMORY_N_ELEMENTS =
+        LOCAL_MEMORY_SIZE / sizeof(uint64_t);
 
-    threadgroup uint32_t localIndices[LOCAL_MEMORY_N_ELEMENTS];
-    for (uint32_t i = 0; i < LOCAL_MEMORY_N_ELEMENTS; ++i) {
+    threadgroup uint64_t localIndices[LOCAL_MEMORY_N_ELEMENTS];
+    for (uint64_t i = 0; i < LOCAL_MEMORY_N_ELEMENTS; ++i) {
         localIndices[i] = indices[i];
     }
 
-    uint32_t nReads = 1;
-    uint32_t ptr = localIndices[0];
-    while (nReads < expectedNReads) {
-        ++nReads;
-        ptr = localIndices[ptr];
+    uint64_t index = 0;
+    do {
+        const uint64_t nextIndex = localIndices[index];
+        indices[index] = (uint64_t)(localIndices + nextIndex);
+        index = nextIndex;
+    } while (index);
+
+    uint64_t iter = nIterations;
+    threadgroup uint64_t *address = localIndices;
+    while (--iter) {
+        address = (threadgroup uint64_t*)(*address);
     }
 
-    indices[ptr] = 0;
+    indices[0] = *address;
 }

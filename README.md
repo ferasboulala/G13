@@ -12,7 +12,7 @@ For M1 Max:
 | Size | 8 KB | 512 KB | 32 KB | - |
 | Line | 32 B | 32 B | - | - |
 | Associativity | 128 | - | - | - |
-| Latency | ~60 ns | ~115 ns | 65 ns | < 500 ns |
+| Latency | ~47 ns | ~100 ns | ~70 ns | < 350 ns |
 
 These numbers were obtained by pointer chasing in a single thread, in a single core.
 

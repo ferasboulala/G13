@@ -36,18 +36,13 @@ int main(int argc, char **argv) {
     auto commandQueue = device->newCommandQueue();
     assert(commandQueue);
 
-    // The kernel will execute extremely fast on small inputs. To aleviate noisy measurements,
-    // we execute the reads many times using a loop. Final duration is divided by the number of
-    // iterations to accomodate for that.
     static constexpr uint64_t MAX_SIZE = 1 << 24;
-    static constexpr uint32_t N_EXPECTED_READS = 1 << 24;
+    static constexpr uint64_t N_EXPECTED_READS = 1 << 26;
 
-    for (uint64_t size = 1 << 8; size <= MAX_SIZE; size <<= 1) {
-        const uint32_t nIterations = N_EXPECTED_READS / size;
-
+    for (uint64_t size = 1 << 4; size <= MAX_SIZE; size <<= 1) {
         auto indicesBuffer =
-            device->newBuffer(size * sizeof(uint32_t), MTL::ResourceStorageModeShared);
-        const auto indices = g13::satolloRandomIndices<uint32_t>(size);
+            device->newBuffer(size * sizeof(uint64_t), MTL::ResourceStorageModeShared);
+        const auto indices = g13::satolloRandomIndices<uint64_t>(size);
         std::memcpy(indicesBuffer->contents(), indices.data(), indicesBuffer->allocatedSize());
 
         MTL::CommandBuffer *commandBuffer = commandQueue->commandBuffer();
@@ -58,7 +53,7 @@ int main(int argc, char **argv) {
 
         computeEncoder->setComputePipelineState(computePipelineState);
         computeEncoder->setBuffer(indicesBuffer, 0, 0);
-        computeEncoder->setBytes(&nIterations, sizeof(nIterations), 1);
+        computeEncoder->setBytes(&N_EXPECTED_READS, sizeof(N_EXPECTED_READS), 1);
 
         const MTL::Size threadgroupSize = MTL::Size::Make(1, 1, 1);
         const MTL::Size gridSize = MTL::Size::Make(32, 1, 1);
@@ -69,11 +64,11 @@ int main(int argc, char **argv) {
             commandBuffer->commit();
             commandBuffer->waitUntilCompleted();
         };
+        const auto duration = g13::measureTime(commit);
 
-        const auto     duration = g13::measureTime(commit);
         const uint64_t durationPerInnerLoopIteration = duration / N_EXPECTED_READS;
-        printf("%12u %12lld ns %4lld ns/read\n",
-               uint32_t(indicesBuffer->allocatedSize()),
+        printf("%12llu %12lld ns %4lld ns/u64\n",
+               uint64_t(indicesBuffer->allocatedSize()),
                duration,
                durationPerInnerLoopIteration);
         fflush(stdout);
